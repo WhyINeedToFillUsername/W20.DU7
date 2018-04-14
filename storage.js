@@ -1,8 +1,8 @@
 exports.storage = {
 
     TOTAL_ORDERS: 105,
-    PER_PAGE: 10,
 
+    // get orders by page + per page params
     getOrdersPage: function(page, perPage){
         const from = page * perPage - perPage;
         const to =  page * perPage - 1;

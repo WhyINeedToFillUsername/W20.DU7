@@ -25,6 +25,7 @@ http.createServer(function (req, res) {
         }
     });
 
+    // main function to process a GET request
     function processGetRequest(req, res) {
         let page = 1; // default value - first page
         let perPage = 10; // default value
@@ -35,8 +36,7 @@ http.createServer(function (req, res) {
             page = matchParams[1];
             perPage = matchParams[2];
 
-            console.log("returning orders - page " + page + ", " + perPage + " per page");
-
+            // basic values check
             const totalPages = Math.ceil(storage.TOTAL_ORDERS / perPage);
             if (page <= 0 || perPage <= 0) { // wrong params, return default page
                 page = 1;
@@ -48,8 +48,9 @@ http.createServer(function (req, res) {
         }
 
         let link = constructLinkHeader(page, perPage);
-        let orders = storage.getOrdersPage(page, perPage);
+        let orders = storage.getOrdersPage(page, perPage); // get data from DB (simulated)
 
+        console.log("returning orders - page " + page + ", " + perPage + " per page");
         res.writeHead(200, {
             'Content-Type': 'application/json',
             'Link': link
@@ -58,7 +59,7 @@ http.createServer(function (req, res) {
     }
 }).listen(8080);
 
-
+// helper function to construct the link header
 function constructLinkHeader(page, perPage) {
     let link = "";
     const totalPages = Math.ceil(storage.TOTAL_ORDERS / perPage);
@@ -70,6 +71,7 @@ function constructLinkHeader(page, perPage) {
     const previous = '</orders?page=' + (page - 1) + '&per_page=' + perPage + '>; rel="previous"';
     const last = '</orders?page=' + totalPages + '&per_page=' + perPage + '>; rel="last"';
 
+    // always include link to first and last page, dynamically add "next" and "previous"
     link += first;
     link += ', ';
 
