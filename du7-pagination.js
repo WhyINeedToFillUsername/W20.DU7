@@ -16,7 +16,7 @@ http.createServer(function (req, res) {
 
     // all data have been received
     req.on('end', function () {
-        if (req.method === "GET" && req.url.match("^/orders")) {
+        if (req.method === "GET" && req.url.match("^/orders\??")) {
             processGetRequest(req, res);
         } else {
             console.log("bad request");
@@ -26,16 +26,64 @@ http.createServer(function (req, res) {
     });
 
     function processGetRequest(req, res) {
+        let page = 1; // default value - first page
+        let perPage = 10; // default value
 
-        //TODO parse req - get pagination
+        // read params from request
+        let matchParams = req.url.match("^/orders\\?page=(\\d+)&per_page=(\\d+)");
+        if (matchParams) {
+            page = matchParams[1];
+            perPage = matchParams[2];
 
-        console.log("returning list of orders");
+            console.log("returning orders - page " + page + ", " + perPage + " per page");
+
+            const totalPages = Math.ceil(storage.TOTAL_ORDERS / perPage);
+            if (page <= 0 || perPage <= 0) { // wrong params, return default page
+                page = 1;
+                perPage = 10;
+            }
+            if (page > totalPages) { // get the last page instead
+                page = totalPages;
+            }
+        }
+
+        let link = constructLinkHeader(page, perPage);
+        let orders = storage.getOrdersPage(page, perPage);
+
         res.writeHead(200, {
             'Content-Type': 'application/json',
-            'Link': '</orders?page=2&per_page=10>; rel="next",  </orders?page=50&per_page=100>; rel="last"'
+            'Link': link
         });
-
-        let orders = storage.getOrders(0, 10);
         res.end(JSON.stringify(orders));
     }
 }).listen(8080);
+
+
+function constructLinkHeader(page, perPage) {
+    let link = "";
+    const totalPages = Math.ceil(storage.TOTAL_ORDERS / perPage);
+
+    const nextPage = Number(page) + Number(1);
+
+    const first = '</orders?page=1&per_page=' + perPage + '>; rel="first"';
+    const next = '</orders?page=' + nextPage + '&per_page=' + perPage + '>; rel="next"';
+    const previous = '</orders?page=' + (page - 1) + '&per_page=' + perPage + '>; rel="previous"';
+    const last = '</orders?page=' + totalPages + '&per_page=' + perPage + '>; rel="last"';
+
+    link += first;
+    link += ', ';
+
+    if (page > 1) {
+        link += previous;
+        link += ', ';
+    }
+
+    if (page < totalPages) {
+        link += next;
+        link += ', ';
+    }
+
+    link += last;
+
+    return link;
+}
